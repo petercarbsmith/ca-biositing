@@ -33,6 +33,7 @@ google-auth-oauthlib = "*"
 prefect = "*"
 uvicorn = ">=0.30.0,<1"
 fastapi = ">=0.115.0,<1"
+linkml = "*"
 
 [tasks]
 pre-commit = "pre-commit run"
