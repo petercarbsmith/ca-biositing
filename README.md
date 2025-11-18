@@ -85,6 +85,9 @@ pixi run run-etl
 
 # Monitor via Prefect UI: http://localhost:4200
 
+# To apply new migrations after the initial setup
+pixi run migrate
+
 # Stop services
 pixi run teardown-services
 ```
