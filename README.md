@@ -69,10 +69,15 @@ cp resources/docker/.env.example resources/docker/.env
 Then start and use the services:
 
 ```bash
-# Start services (PostgreSQL, Prefect server, worker)
+# 1. Create the initial database migration script
+# (This is only needed once for a new database)
+pixi run initial-migration
+
+# 2. Start all services (PostgreSQL, Prefect server, worker)
+# This will also automatically apply any pending database migrations.
 pixi run start-services
 
-# Deploy flows to Prefect
+# 3. Deploy flows to Prefect
 pixi run deploy
 
 # Run the ETL pipeline
@@ -144,7 +149,7 @@ Key tasks:
 - **ETL Operations**: `deploy`, `run-etl`
 - **Development**: `test`, `test-cov`, `pre-commit`, `pre-commit-all`
 - **Applications**: `start-webservice`, `qgis`
-- **Database**: `access-db`, `check-db-health`
+- **Database**: `access-db`, `check-db-health`, `initial-migration`, `migrate`
 
 ## Architecture
 
