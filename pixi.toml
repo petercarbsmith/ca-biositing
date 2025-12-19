@@ -179,6 +179,8 @@ migrate = { cmd = [
     "start-services",
 ] }
 
+update-schema = { cmd = "python src/ca_biositing/datamodels/utils/orchestrate_schema_update.py", description = "Orchestrate schema update: generate models, rebuild services, and create migration." }
+
 [tasks.qgis]
 depends-on = [{ task = "run-qgis", environment = "gis" }]
 
@@ -252,7 +254,7 @@ args = [
     { "arg" = "env_file", "default" = "../docker/.env" },
 ]
 cwd = "resources/prefect"
-cmd = "./deploy.py --env-file {{ env_file }} {{ deployment_name }}"
+cmd = ["python", "deploy.py", "--env-file", "{{ env_file }}", "{{ deployment_name }}"]
 description = "Deploy the ETL pipeline to Prefect."
 depends-on = [{ task = "start-services" }]
 
@@ -304,3 +306,7 @@ cwd = "deployment/cloud/gcp/infrastructure"
 [feature.cloud.tasks.cloud-destroy]
 cmd = "tofu destroy"
 cwd = "deployment/cloud/gcp/infrastructure"
+
+[pypi-dependencies]
+linkml = ">=1.9.3, <2"
+sqlalchemy = ">=2.0.44, <3"

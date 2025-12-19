@@ -1,8 +1,8 @@
-"""Initial migration
+"""Deleted duplicate .yaml files
 
-Revision ID: 301006b4795f
-Revises: e15bda744fef
-Create Date: 2025-11-12 20:54:01.573577
+Revision ID: 184417c6d044
+Revises: bfa07351a507
+Create Date: 2025-12-17 19:03:32.278635
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '301006b4795f'
-down_revision: Union[str, Sequence[str], None] = 'e15bda744fef'
+revision: str = '184417c6d044'
+down_revision: Union[str, Sequence[str], None] = 'bfa07351a507'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
