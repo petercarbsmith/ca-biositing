@@ -10,8 +10,8 @@ data access.
 This project uses a **PEP 420 namespace package** structure with three main
 components:
 
-- **`ca_biositing.datamodels`**: Shared SQLModel database models and database
-  configuration
+- **`ca_biositing.datamodels`**: Shared LinkML/SQLModel database models and
+  database configuration
 - **`ca_biositing.pipeline`**: ETL pipelines orchestrated with Prefect, deployed
   via Docker
 - **`ca_biositing.webservice`**: FastAPI REST API for data access
@@ -107,7 +107,6 @@ pixi run start-webservice
 #### QGIS (Geospatial Analysis)
 
 ```bash
-# Launch QGIS
 pixi run qgis
 ```
 
@@ -152,7 +151,8 @@ Key tasks:
 - **ETL Operations**: `deploy`, `run-etl`
 - **Development**: `test`, `test-cov`, `pre-commit`, `pre-commit-all`
 - **Applications**: `start-webservice`, `qgis`
-- **Database**: `access-db`, `check-db-health`, `initial-migration`, `migrate`
+- **Database**: `access-db`, `check-db-health`
+- **Datamodels**: `update-schema`, `migrate`
 
 ## Architecture
 
@@ -181,6 +181,15 @@ Pipeline architecture:
 3. **Load**: Insert/update records in PostgreSQL via SQLModel
 
 ### Database Models
+
+We use a **LinkML-first approach** for defining our data schema. The workflow
+is:
+
+1.  **LinkML Schema**: The schema is defined in YAML files (source of truth).
+2.  **SQLAlchemy Generation**: Python classes are automatically generated from
+    LinkML.
+3.  **Alembic Migrations**: Database migrations are generated from the Python
+    classes.
 
 SQLModel-based models provide:
 
@@ -288,120 +297,60 @@ This project uses **Pixi environments** for different workflows:
 
 ## Frontend Integration
 
-This repository includes the **Cal Bioscape Frontend** as a Git submodule in the
-`frontend/` directory.
+This repository now includes the **Cal Bioscape Frontend** as a Git submodule
+located in the `frontend/` directory.
 
 ### Initializing the Submodule
 
+When you first clone this repository, you can initialize and pull only the
+`frontend` submodule with:
+
 ```bash
-# Initialize and pull the frontend submodule
 pixi run submodule-frontend-init
-
-# Install frontend dependencies
-pixi run frontend-install
-
-# Run frontend in development mode
-pixi run frontend-dev
-
-# Build production bundle
-pixi run frontend-build
 ```
 
-## Troubleshooting
+## 📘 Documentation
 
-### Services Won't Start
+This project uses
+[MkDocs Material](https://squidfunk.github.io/mkdocs-material/) for
+documentation.
+
+### Local Preview
+
+You can preview the documentation locally using [Pixi](https://pixi.sh/):
 
 ```bash
-# Check service status
-pixi run service-status
-
-# View logs
-pixi run service-logs
-
-# Rebuild images
-pixi run rebuild-services
+pixi install -e docs
+pixi run -e docs docs-serve
 ```
 
-### Database Issues
+Then open your browser and go to:
+
+```
+http://127.0.0.1:8000
+```
+
+### Contributing Documentation
+
+Most documentation should live in the relevant directories within the `docs`
+folder.
+
+When adding new pages to the documentation, make sure you update the
+[`mkdocs.yml` file](https://github.com/uw-ssec/ca-biositing/blob/main/mkdocs.yml)
+so they can be rendered on the website.
+
+If you need to add documentation referencing a file that lives elsewhere in the
+repository, you'll need to do the following (this is an example, run from the
+package root directory)
 
 ```bash
-# Check database health
-pixi run check-db-health
+# symlink the file to its destination
+# Be sure to use relative paths here, otherwise it won't work!
+ln -s ../../deployment/README.md docs/deployment/README.md
 
-# Access database
-pixi run access-db
+# stage your new file
+git add docs/deployment/README.md
 ```
 
-### Pre-commit Failures
-
-Pre-commit hooks may auto-fix files. If this happens:
-
-1. Re-stage the fixed files: `git add <files>`
-2. Re-run: `pixi run pre-commit`
-
-## Documentation
-
-### Component Documentation
-
-- **Data Models**:
-  [`src/ca_biositing/datamodels/README.md`](src/ca_biositing/datamodels/README.md)
-- **ETL Pipeline**:
-  [`src/ca_biositing/pipeline/README.md`](src/ca_biositing/pipeline/README.md)
-- **Web Service**:
-  [`src/ca_biositing/webservice/README.md`](src/ca_biositing/webservice/README.md)
-- **Deployment Resources**: [`resources/README.md`](resources/README.md)
-
-### Workflow Guides
-
-- **Docker Workflow**:
-  [`src/ca_biositing/pipeline/docs/DOCKER_WORKFLOW.md`](src/ca_biositing/pipeline/docs/DOCKER_WORKFLOW.md)
-- **Prefect Workflow**:
-  [`src/ca_biositing/pipeline/docs/PREFECT_WORKFLOW.md`](src/ca_biositing/pipeline/docs/PREFECT_WORKFLOW.md)
-- **ETL Development**:
-  [`src/ca_biositing/pipeline/docs/ETL_WORKFLOW.md`](src/ca_biositing/pipeline/docs/ETL_WORKFLOW.md)
-- **Database Migrations**:
-  [`src/ca_biositing/pipeline/docs/ALEMBIC_WORKFLOW.md`](src/ca_biositing/pipeline/docs/ALEMBIC_WORKFLOW.md)
-- **Google Cloud Setup**:
-  [`src/ca_biositing/pipeline/docs/GCP_SETUP.md`](src/ca_biositing/pipeline/docs/GCP_SETUP.md)
-
-### AI Assistant Guidance
-
-- **Main Repository**: [`AGENTS.md`](AGENTS.md)
-- **Resources**: [`resources/AGENTS.md`](resources/AGENTS.md)
-- **Data Models**:
-  [`src/ca_biositing/datamodels/AGENTS.md`](src/ca_biositing/datamodels/AGENTS.md)
-- **Pipeline**:
-  [`src/ca_biositing/pipeline/AGENTS.md`](src/ca_biositing/pipeline/AGENTS.md)
-- **Web Service**:
-  [`src/ca_biositing/webservice/AGENTS.md`](src/ca_biositing/webservice/AGENTS.md)
-
-## Project Resources
-
-### Internal Resources
-
-- 🔒 eScience Slack:
-  [#ssec-ca-biositing](https://escience-institute.slack.com/archives/C098GJCTTFE)
-- 🔒 SSEC Sharepoint:
-  [Projects/GeospatialBioeconomy](https://uwnetid.sharepoint.com/:f:/r/sites/og_ssec_escience/Shared%20Documents/Projects/GeospatialBioeconomy?csf=1&web=1&e=VBUGQG)
-- 🔒 Shared Folder:
-  [SSEC CA Biositing](https://uwnetid.sharepoint.com/:f:/r/sites/og_ssec_escience/Shared%20Documents/Projects/GeospatialBioeconomy/SSEC%20CA%20Biositing%20Shared%20Folder?csf=1&web=1&e=p5wBel)
-
-### Discussion & Support
-
-- **General Discussion**:
-  [GitHub Discussions](https://github.com/uw-ssec/ca-biositing/discussions)
-- **Meeting Notes**:
-  [discussions/meetings](https://github.com/uw-ssec/ca-biositing/discussions/categories/meetings)
-- **Questions**: Contact [Anshul Tambay](https://github.com/atambay37)
-
-## Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for contribution guidelines.
-
-## License
-
-See [`LICENSE`](LICENSE) for license information.
-
-## Code of Conduct
-
-See [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for our community guidelines.
+Be sure to preview the documentation to make sure it's accurate before
+submitting a PR.
