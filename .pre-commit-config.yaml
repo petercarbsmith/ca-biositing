@@ -29,6 +29,7 @@ repos:
     hooks:
       - id: codespell
         exclude: (\.ipynb$|pixi\.lock)
+        args: ["--ignore-words-list=BU"]
 
   - repo: local
     hooks:
