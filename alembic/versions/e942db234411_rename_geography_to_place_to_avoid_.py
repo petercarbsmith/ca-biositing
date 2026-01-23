@@ -20,27 +20,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # 1. Create the new 'place' table
-    op.create_table('place',
-    sa.Column('geoid', sa.Text(), nullable=False),
-    sa.Column('state_name', sa.Text(), nullable=True),
-    sa.Column('state_fips', sa.Text(), nullable=True),
-    sa.Column('county_name', sa.Text(), nullable=True),
-    sa.Column('county_fips', sa.Text(), nullable=True),
-    sa.Column('region_name', sa.Text(), nullable=True),
-    sa.Column('agg_level_desc', sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint('geoid')
-    )
-
-    # 2. Migrate data from the old table (which we renamed to geography_table earlier)
-    op.execute("INSERT INTO place SELECT * FROM geography_table")
-
-    # 3. Update foreign keys to point to 'place'
-    op.drop_constraint('location_address_geography_id_fkey', 'location_address', type_='foreignkey')
-    op.create_foreign_key('location_address_geography_id_fkey', 'location_address', 'place', ['geography_id'], ['geoid'])
-
-    # 4. Drop the old table
-    op.drop_table('geography_table')
+    # Note: This migration assumes geography_table exists, but it doesn't
+    # in the current schema. Making this a no-op since the tables don't exist
+    # and the schema has moved past this state.
+    pass
 
 
 def downgrade() -> None:
