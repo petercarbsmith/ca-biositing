@@ -17,7 +17,7 @@ from ca_biositing.pipeline.utils.name_id_swap import normalize_dataframes
 # --- CONFIGURATION ---
 # List the names of the extract modules this transform depends on.
 # The pipeline runner provides these in the `data_sources` dictionary.
-EXTRACT_SOURCES: List[str] = ["source_one"]
+EXTRACT_SOURCES: List[str] = ["basic_sample_info"]
 
 @task
 def transform(
@@ -41,7 +41,10 @@ def transform(
 
     # CRITICAL: Lazy import models inside the task to avoid Docker import hangs
     from ca_biositing.datamodels.schemas.generated.ca_biositing import (
-        Dataset,
+        Resource,
+        ResourceClass,
+        ResourceSubclass,
+        PrimaryAgProduct
         # Add other models needed for normalization here (e.g., Resource, Unit)
     )
 
@@ -86,7 +89,9 @@ def transform(
     # 3. Normalization (Name-to-ID Swapping)
     # Format: 'dataframe_column': (SQLAlchemyModel, 'lookup_field_in_db')
     normalize_columns = {
-        'dataset': (Dataset, 'name'),
+        'resource_class': (ResourceClass, 'name'),
+        'resource_subclass': (ResourceSubclass, 'name'),
+        'primary_ag_product': (PrimaryAgProduct, 'name'),
         # Example: 'unit': (Unit, 'name'),
     }
 
@@ -96,9 +101,22 @@ def transform(
     # 4. Column Renaming
     # TODO: Update this dictionary to match your source-to-target mapping
     rename_columns = {
+        'resource': 'name'
         # 'source_col': 'target_col',
     }
     normalized_df = normalized_df.rename(columns=rename_columns)
+
+    # 4.5 Filter invalid names
+    if 'name' in normalized_df.columns:
+        initial_count = len(normalized_df)
+        normalized_df = normalized_df[
+            normalized_df['name'].notna() &
+            (normalized_df['name'].astype(str).str.strip() != "") &
+            (normalized_df['name'].astype(str).str.lower() != "#n/a")
+        ]
+        filtered_count = initial_count - len(normalized_df)
+        if filtered_count > 0:
+            logger.info(f"Filtered out {filtered_count} records with invalid names (empty or '#n/a').")
 
     # 5. Final Mapping & Selection
     # TODO: Update this list to match the columns in your target database table
@@ -110,8 +128,11 @@ def transform(
             normalized_df['lineage_group_id'] = lineage_group_id
 
         final_df = normalized_df[[
-            'record_id',
-            'dataset_id',
+            'name',
+            'primary_ag_product_id',
+            'resource_class_id',
+            'resource_subclass_id',
+            'note',
             # Add other columns here...
             'etl_run_id',
             'lineage_group_id'
