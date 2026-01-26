@@ -24,11 +24,21 @@ from requests.packages.urllib3.util.retry import Retry
 BASE_URL = "https://quickstats.nass.usda.gov/api/api_GET"
 TIMEOUT = 30
 MAX_RETRIES = 3
+# Rate limiting: USDA API has implicit rate limits.
+# Being respectful: 1 second between requests
+REQUEST_DELAY = 1.0
 
 
 def _get_session_with_retries():
     """
-    Create a requests session with retry strategy for resilience.
+    Create a requests session with retry strategy for API resilience.
+
+    This uses exponential backoff to respect the NASS API:
+    - Retry on: 429 (rate limit), 500-504 (server errors)
+    - Backoff: 2^attempt seconds (1s, 2s, 4s, 8s...)
+    - Max retries: 3
+
+    This respects NASS API terms by not hammering the endpoint.
 
     Returns:
         requests.Session: Session with retry strategy configured
@@ -36,7 +46,7 @@ def _get_session_with_retries():
     session = requests.Session()
     retry_strategy = Retry(
         total=MAX_RETRIES,
-        backoff_factor=1,
+        backoff_factor=1,  # Exponential backoff: 2^attempt seconds
         status_forcelist=[429, 500, 502, 503, 504],
         allowed_methods=["GET"]
     )
@@ -52,37 +62,52 @@ def usda_nass_to_df(
     year: Optional[int] = None,
     commodity: Optional[str] = None,
     commodity_ids: Optional[List[int]] = None,
+    county_code: Optional[str] = None,
+    agg_level_desc: str = "COUNTY",
+    statisticcat_desc: Optional[str] = None,
+    unit_desc: Optional[str] = None,
+    domain_desc: str = "TOTAL",
     **kwargs
 ) -> Optional[pd.DataFrame]:
     """
-    Fetch agricultural data from USDA NASS QuickStats API.
+    Fetch agricultural data from USDA NASS QuickStats API with detailed filtering.
 
     This function queries the USDA NASS API for agricultural census and survey data.
-    It supports filtering by state, year, and commodity (by name or by ID).
+    It supports filtering by state, year, commodity, county, aggregation level,
+    statistic category, units, and domain.
 
     Args:
-        api_key (str): Your USDA NASS API key (get free key from https://quickstats.nass.usda.gov/api)
-        state (str): State code, e.g., "CA" for California. Default: "CA"
-        year (Optional[int]): Filter by specific year (e.g., 2023). Default: None (all years)
-        commodity (Optional[str]): Filter by commodity name (e.g., "CORN", "ALMONDS").
-                                  Default: None (all commodities)
-        commodity_ids (Optional[List[int]]): List of commodity IDs from resource_usda_commodity_map.
-                                            When provided, takes precedence over commodity parameter.
-                                            Default: None
-        **kwargs: Additional parameters to pass to USDA API (e.g., data_item, agg_level_desc)
+        api_key (str): Your USDA NASS API key
+        state (str): State code (e.g., "CA"). Default: "CA"
+        year (Optional[int]): Filter by specific year. Default: None (all years)
+        commodity (Optional[str]): Commodity name (e.g., "CORN", "ALMONDS")
+        commodity_ids (Optional[List[int]]): Commodity IDs from database
+        county_code (Optional[str]): County FIPS code (e.g., "06077" for San Joaquin)
+        agg_level_desc (str): Aggregation level - "NATIONAL", "STATE", "COUNTY", "DISTRICT"
+                             Default: "COUNTY"
+        statisticcat_desc (Optional[str]): "AREA HARVESTED", "YIELD", "PRODUCTION", etc.
+        unit_desc (Optional[str]): "ACRES", "BUSHELS", "TONS", etc.
+        domain_desc (str): "TOTAL" (all operations) or specific demographic subset
+                          Default: "TOTAL"
+        **kwargs: Additional NASS API parameters
 
     Returns:
-        Optional[pd.DataFrame]: DataFrame containing USDA data, or None if query fails
+        Optional[pd.DataFrame]: DataFrame with columns including record count tracking
 
-    Raises:
-        ValueError: If api_key is empty
+    Reference:
+        https://quickstats.nass.usda.gov/api
+        https://content.ces.ncsu.edu/getting-data-from-the-national-agricultural-statistics-service-nass-using-r
 
     Example:
         >>> df = usda_nass_to_df(
         ...     api_key="your_key",
         ...     state="CA",
         ...     year=2023,
-        ...     commodity="CORN"
+        ...     commodity="CORN",
+        ...     county_code="06077",  # San Joaquin County
+        ...     agg_level_desc="COUNTY",
+        ...     statisticcat_desc="YIELD",
+        ...     unit_desc="BUSHELS"
         ... )
     """
 
@@ -100,12 +125,24 @@ def usda_nass_to_df(
     # Add optional filters
     if year is not None:
         base_params["year"] = year
+    if county_code is not None:
+        base_params["county_code"] = county_code
+
+    base_params["agg_level_desc"] = agg_level_desc
+    base_params["domain_desc"] = domain_desc
+
+    if statisticcat_desc is not None:
+        base_params["statisticcat_desc"] = statisticcat_desc
+    if unit_desc is not None:
+        base_params["unit_desc"] = unit_desc
 
     # Add any additional kwargs
     base_params.update(kwargs)
 
     session = _get_session_with_retries()
     all_dfs = []
+    total_records_imported = 0
+    query_log = []
 
     try:
         # Handle commodity_ids query (database-driven approach)
@@ -134,16 +171,39 @@ def usda_nass_to_df(
                         print(f"    USDA API Error: {data['error']}")
                         continue
 
-                    # Check if data is a list (successful query)
-                    if isinstance(data, list) and len(data) > 0:
-                        df = pd.DataFrame(data)
-                        all_dfs.append(df)
-                        print(f"    ✓ Retrieved {len(df)} records for commodity {comm_id}")
+                    # Extract actual data (USDA API returns {"data": [...]} not [...])
+                    if isinstance(data, dict) and "data" in data:
+                        actual_data = data["data"]
+                    elif isinstance(data, list):
+                        actual_data = data
                     else:
+                        actual_data = []
+
+                    # Check if we have data (successful query)
+                    if len(actual_data) > 0:
+                        df = pd.DataFrame(actual_data)
+                        all_dfs.append(df)
+                        records_count = len(df)
+                        total_records_imported += records_count
+                        query_log.append({
+                            'commodity_id': comm_id,
+                            'records': records_count,
+                            'year': year,
+                            'status': 'success'
+                        })
+                        print(f"    ✓ Retrieved {records_count} records for commodity {comm_id}")
+                    else:
+                        query_log.append({
+                            'commodity_id': comm_id,
+                            'records': 0,
+                            'year': year,
+                            'status': 'no_data'
+                        })
                         print(f"    No data returned for commodity {comm_id}")
 
-                    # Rate limiting (USDA API courtesy)
-                    time.sleep(0.5)
+                    # Rate limiting (NASS API courtesy)
+                    # Being respectful to avoid key suspension
+                    time.sleep(REQUEST_DELAY)
 
                 except requests.exceptions.RequestException as e:
                     print(f"    Request failed for commodity {comm_id}: {e}")
@@ -165,8 +225,16 @@ def usda_nass_to_df(
                     print(f"USDA API Error: {data['error']}")
                     return None
 
-                if isinstance(data, list) and len(data) > 0:
-                    df = pd.DataFrame(data)
+                # Extract actual data (USDA API returns {"data": [...]} not [...])
+                if isinstance(data, dict) and "data" in data:
+                    actual_data = data["data"]
+                elif isinstance(data, list):
+                    actual_data = data
+                else:
+                    actual_data = []
+
+                if len(actual_data) > 0:
+                    df = pd.DataFrame(actual_data)
                     all_dfs.append(df)
                     print(f"✓ Retrieved {len(df)} records for commodity {commodity}")
                 else:
@@ -189,8 +257,16 @@ def usda_nass_to_df(
                     print(f"USDA API Error: {data['error']}")
                     return None
 
-                if isinstance(data, list) and len(data) > 0:
-                    df = pd.DataFrame(data)
+                # Extract actual data (USDA API returns {"data": [...]} not [...])
+                if isinstance(data, dict) and "data" in data:
+                    actual_data = data["data"]
+                elif isinstance(data, list):
+                    actual_data = data
+                else:
+                    actual_data = []
+
+                if len(actual_data) > 0:
+                    df = pd.DataFrame(actual_data)
                     all_dfs.append(df)
                     print(f"✓ Retrieved {len(df)} total records")
                 else:
@@ -210,6 +286,24 @@ def usda_nass_to_df(
         else:
             result_df = pd.concat(all_dfs, ignore_index=True)
             print(f"✓ Combined {len(all_dfs)} queries into {len(result_df)} total records")
+
+        # Add metadata for tracking
+        print("\n" + "="*60)
+        print("IMPORT SUMMARY")
+        print("="*60)
+        print(f"Total Records Imported: {total_records_imported}")
+        print(f"Parameters Used:")
+        print(f"  - State: {state}")
+        print(f"  - Year: {year if year else 'All'}")
+        print(f"  - Aggregation Level: {agg_level_desc}")
+        print(f"  - Domain: {domain_desc}")
+        if statisticcat_desc:
+            print(f"  - Statistic Category: {statisticcat_desc}")
+        if unit_desc:
+            print(f"  - Unit: {unit_desc}")
+        if county_code:
+            print(f"  - County Code: {county_code}")
+        print("="*60 + "\n")
 
         return result_df
 

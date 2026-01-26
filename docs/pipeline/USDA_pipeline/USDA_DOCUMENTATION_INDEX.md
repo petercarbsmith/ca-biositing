@@ -25,6 +25,10 @@ min)
 [USDA_API_MIGRATION_GUIDE.md](USDA_API_MIGRATION_GUIDE.md) (15 min, already
 implemented)
 
+**How do I map commodities to USDA codes?** → Read:
+[USDA_MATCHER_GUIDE.md](../../USDA_MATCHER_GUIDE.md) (10 min) and
+[ENHANCED_MAPPER_README.md](../../ENHANCED_MAPPER_README.md) (15 min)
+
 ---
 
 ## Document Structure
@@ -118,6 +122,13 @@ Adding new crops = database row (no code changes!)
 - ✅ USDA_STRATEGY_SUMMARY.md
 - ✅ THIS INDEX
 
+**Documentation** (in root):
+
+- ✅ USDA_MATCHER_GUIDE.md (commodity matching strategy)
+- ✅ ENHANCED_MAPPER_README.md (enhanced mapper guide)
+- ✅ USDA_API_TEMPLATE_GUIDE.md (API template reference)
+- ✅ SATURDAY_WORK_PLAN.md (weekend work timeline)
+
 **Code** (created earlier in session):
 
 - ✅
@@ -129,7 +140,10 @@ Adding new crops = database row (no code changes!)
 
 **Code** (you'll create following checklist):
 
+- ✅ `enhanced_commodity_mapper.py` (root level, live API integration with
+  auto-match + interactive review)
 - ⏳ `src/ca_biositing/pipeline/ca_biositing/pipeline/utils/commodity_mapper.py`
+  (programmatic utility for use in pipeline)
 - ⏳ `resources/prefect/flows/bootstrap_usda_commodities.py`
 - ⏳ Database mappings in `resource_usda_commodity_map`
 
