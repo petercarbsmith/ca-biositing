@@ -75,36 +75,55 @@ def seed_usda_test_data():
         session.commit()
         print(f"\n[OK] Created/verified {len(created_commodities)} commodities")
 
-        # 2. Get or create a primary_crop for testing
-        # Note: The schema uses 'primary_crop' not 'primary_ag_product'
-        print("\n2. Creating test primary_crop for mapping...")
+        # 2. Get or create test resource and primary_ag_product for mapping
+        print("\n2. Getting test resource and primary_ag_product for mapping...")
 
-        # Create a test primary_crop directly via SQL
         try:
             from sqlalchemy import text
-            session.execute(
-                text("INSERT INTO primary_crop (name) VALUES ('Test Crop') ON CONFLICT DO NOTHING")
-            )
-            session.commit()
-            print(f"  [OK] Created/verified test primary_crop")
 
-            # Now get it back to use in mapping
-            primary_crop_id = session.execute(
-                text("SELECT id FROM primary_crop WHERE name = 'Test Crop' LIMIT 1")
+            # Check if we have any resources
+            resource_id = session.execute(
+                text("SELECT id FROM resource LIMIT 1")
             ).scalar()
 
-            if not primary_crop_id:
-                print("  [FAIL] Failed to create primary_crop")
-                return False
+            if not resource_id:
+                # Create a test resource if none exist
+                session.execute(
+                    text("INSERT INTO resource (name, resource_class_id, created_at, updated_at) VALUES ('Test Resource', 1, NOW(), NOW())")
+                )
+                session.commit()
+                resource_id = session.execute(
+                    text("SELECT id FROM resource ORDER BY id DESC LIMIT 1")
+                ).scalar()
+                print(f"  [+] Created test resource ID: {resource_id}")
+            else:
+                print(f"  [*] Using existing resource ID: {resource_id}")
 
-            print(f"  [OK] primary_crop ID: {primary_crop_id}")
+            # Check if we have any primary_ag_products
+            primary_ag_product_id = session.execute(
+                text("SELECT id FROM primary_ag_product LIMIT 1")
+            ).scalar()
+
+            if not primary_ag_product_id:
+                # Create a test primary_ag_product if none exist
+                session.execute(
+                    text("INSERT INTO primary_ag_product (name, created_at, updated_at) VALUES ('Test Product', NOW(), NOW())")
+                )
+                session.commit()
+                primary_ag_product_id = session.execute(
+                    text("SELECT id FROM primary_ag_product ORDER BY id DESC LIMIT 1")
+                ).scalar()
+                print(f"  [+] Created test primary_ag_product ID: {primary_ag_product_id}")
+            else:
+                print(f"  [*] Using existing primary_ag_product ID: {primary_ag_product_id}")
+
         except Exception as e:
-            print(f"  ✗ Error creating primary_crop: {e}")
+            print(f"  ✗ Error getting/creating resource or primary_ag_product: {e}")
             return False
 
-        # 3. Create mappings between primary_crop and USDA commodities
+        # 3. Create mappings between resources, products, and USDA commodities
         print(f"\n3. Creating mappings...")
-        print(f"   Linking {len(created_commodities)} commodities to primary_crop (ID={primary_crop_id})...")
+        print(f"   Linking {len(created_commodities)} commodities to resource (ID={resource_id}) + product (ID={primary_ag_product_id})...")
 
         mappings_created = 0
         for commodity in created_commodities:
@@ -112,18 +131,18 @@ def seed_usda_test_data():
                 from sqlalchemy import text
                 # Check if mapping already exists
                 existing = session.execute(
-                    text(f"SELECT id FROM resource_usda_commodity_map WHERE primary_crop_id = {primary_crop_id} AND usda_commodity_id = {commodity.id}")
+                    text(f"SELECT id FROM resource_usda_commodity_map WHERE resource_id = {resource_id} AND primary_ag_product_id = {primary_ag_product_id} AND usda_commodity_id = {commodity.id}")
                 ).scalar()
 
                 if not existing:
                     session.execute(
-                        text(f"INSERT INTO resource_usda_commodity_map (primary_crop_id, usda_commodity_id, match_tier, note, created_at, updated_at) VALUES ({primary_crop_id}, {commodity.id}, 'DIRECT_MATCH', 'Test mapping for USDA import', NOW(), NOW())")
+                        text(f"INSERT INTO resource_usda_commodity_map (resource_id, primary_ag_product_id, usda_commodity_id, match_tier, note, created_at, updated_at) VALUES ({resource_id}, {primary_ag_product_id}, {commodity.id}, 'DIRECT_MATCH', 'Test mapping for USDA import', NOW(), NOW())")
                     )
                     session.commit()
-                    print(f"  [+] Created mapping: Test Crop -> {commodity.name}")
+                    print(f"  [+] Created mapping: resource -> product -> {commodity.name}")
                     mappings_created += 1
                 else:
-                    print(f"  [*] Mapping already exists: Test Crop -> {commodity.name}")
+                    print(f"  [*] Mapping already exists: resource -> product -> {commodity.name}")
             except Exception as e:
                 print(f"  [FAIL] Error creating mapping for {commodity.name}: {e}")
                 continue
