@@ -1,27 +1,28 @@
-"""Database connection and session management for CA Biositing data models."""
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+from .config import settings
 
-from __future__ import annotations
+# Create engine using the database URL from settings
+# echo=False by default to avoid verbose SQL logging
+engine = create_engine(settings.database_url, echo=False)
 
-from typing import Generator
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-from sqlmodel import Session, create_engine
+Base = declarative_base()
 
-from ca_biositing.datamodels.config import config
-
-# Create database engine
-engine = create_engine(
-    config.database_url,
-    echo=config.echo_sql,
-    pool_size=config.pool_size,
-    max_overflow=config.max_overflow,
-)
-
-
-def get_session() -> Generator[Session, None, None]:
-    """Get a database session.
-
-    Yields:
-        Session: SQLModel database session
+def get_session():
     """
-    with Session(engine) as session:
-        yield session
+    Dependency that yields a database session.
+    Useful for FastAPI dependencies.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def get_engine():
+    """
+    Returns the database engine.
+    """
+    return engine
