@@ -1,0 +1,98 @@
+id: https://w3id.org/ca_biositing/infrastructure/infrastructure_crude_oil_pipelines
+name: infrastructure_crude_oil_pipelines
+prefixes:
+  linkml: https://w3id.org/linkml/
+imports:
+  - linkml:types
+  - ../core/base_entity
+default_range: string
+
+classes:
+  InfrastructureCrudeOilPipelines:
+    description: Geospatial data (MultiLineStrings) of crude oil pipelines.
+    slots:
+      - pipeline_id
+      - operator_name
+      - pipeline_name
+      - source
+      - type
+      - notes
+      - artificial
+      - master_oid
+      - commodity
+      - volume
+      - capacity
+      - vcr
+      - shape_length
+      - mode_type
+      - length
+      - geometry
+    slot_usage:
+      pipeline_id:
+        identifier: true
+        range: integer
+
+slots:
+  pipeline_id:
+    range: integer
+    description: ID of the pipeline.
+
+  operator_name:
+    range: string
+    description: Name of the pipeline operator.
+
+  pipeline_name:
+    range: string
+    description: Name of the pipeline.
+
+  source:
+    range: string
+    description: Source of the data.
+
+  type:
+    range: string
+    description: Pipeline type.
+
+  notes:
+    range: string
+    description: Notes about the pipeline.
+
+  artificial:
+    range: string
+    description: . # help?
+
+  master_oid:
+    range: integer
+    description: ???? # help?
+
+  commodity:
+    range: string
+    description: Commodity that the pipeline transports.
+
+  volume:
+    range: decimal
+    description: Volume of the pipeline.
+
+  capacity:
+    range: decimal
+    description: Capacity of the pipeline.
+
+  vcr:
+    range: integer
+    description: ???? # help?
+
+  shape_length:
+    range: decimal
+    description: Length of the geometry shape.
+
+  mode_type:
+    range: string
+    description: Type, categorized by FTOT?
+
+  length:
+    range: decimal
+    description: Length of the multiline string.
+
+  geometry:
+    range: geometry
+    description: Geometry representation of the pipeline.

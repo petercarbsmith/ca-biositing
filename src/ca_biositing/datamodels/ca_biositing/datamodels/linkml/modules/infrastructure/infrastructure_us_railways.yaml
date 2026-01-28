@@ -1,0 +1,83 @@
+id: https://w3id.org/ca_biositing/infrastructure/infrastructure_us_railways
+name: infrastructure_us_railways
+prefixes:
+  linkml: https://w3id.org/linkml/
+imports:
+  - linkml:types
+  - ../core/base_entity
+default_range: string
+
+classes:
+  InfrastructureCrudeOilPipelines:
+    description: Geospatial data (MultiLineStrings) of U.S. railways.
+    slots:
+      - railway_id
+      - state
+      - name
+      - link_type
+      - dir_flag
+      - volume
+      - capacity
+      - VCR
+      - artificial
+      - shape_length
+      - mode_type
+      - length
+      - geometry
+    slot_usage:
+      railway_id:
+        identifier: true
+        range: integer
+
+slots:
+  railway_id:
+    range: integer
+    description: ID of the railway.
+
+  state:
+    range: string
+    description: State.
+
+  name:
+    range: string
+    description: Name of the railway
+
+  link_type:
+    range: string
+    description: Link type of the railway.
+
+  dir_flag:
+    range: decimal
+    description: ???? # help
+
+  volume:
+    range: decimal
+    description: Volume.
+
+  capacity:
+    range: decimal
+    description: Capacity?
+
+  vcr:
+    range: integer
+    description: ???? # help?
+
+  artificial:
+    range: integer
+    description: ???? # help?
+
+  shape_length:
+    range: decimal
+    description: Length of the shape representing the railway.
+
+  mode_type:
+    range: string
+    description: Type, categorized by FTOT?
+
+  length:
+    range: decimal
+    description: Length of the multiline string.
+
+  geometry:
+    range: geometry
+    description: Geometry representation of the railway.
