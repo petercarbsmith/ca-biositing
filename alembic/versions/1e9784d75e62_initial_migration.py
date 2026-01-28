@@ -407,7 +407,7 @@ def upgrade() -> None:
     sa.Column('lineage_group_id', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('geography',
+    op.create_table('place',
     sa.Column('geoid', sa.Text(), nullable=False),
     sa.Column('state_name', sa.Text(), nullable=True),
     sa.Column('state_fips', sa.Text(), nullable=True),
@@ -1078,7 +1078,7 @@ def downgrade() -> None:
     op.drop_table('landiq_record')
     op.drop_table('icp_record')
     op.drop_table('harvest_method')
-    op.drop_table('geography')
+    op.drop_table('place')
     op.drop_table('gasification_record')
     op.drop_table('ftnir_record')
     op.drop_table('file_object_metadata')

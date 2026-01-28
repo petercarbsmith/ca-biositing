@@ -94,7 +94,7 @@ def upgrade() -> None:
     sa.Column('uri', sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('geography',
+    op.create_table('place',
     sa.Column('geoid', sa.Text(), nullable=False),
     sa.Column('state_name', sa.Text(), nullable=True),
     sa.Column('state_fips', sa.Text(), nullable=True),
@@ -581,7 +581,7 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('etl_run_id', sa.Text(), nullable=True),
     sa.Column('lineage_group_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['geography_id'], ['geography.geoid'], ),
+    sa.ForeignKeyConstraint(['geography_id'], ['place.geoid'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('parameter',
@@ -1589,7 +1589,7 @@ def downgrade() -> None:
     op.drop_table('infrastructure_biosolids_facilities')
     op.drop_table('infrastructure_biodiesel_plants')
     op.drop_table('harvest_method')
-    op.drop_table('geography')
+    op.drop_table('place')
     op.drop_table('field_storage_method')
     op.drop_table('etl_run')
     op.drop_table('entity_lineage')

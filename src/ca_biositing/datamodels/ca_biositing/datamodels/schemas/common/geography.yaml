@@ -1,5 +1,5 @@
 id: geography
-name: Geography
+name: Place
 description: >
   Common geographic identifiers used across multiple datasets. Includes states,
   counties, FIPS codes, and optional regions.
@@ -14,10 +14,10 @@ imports:
   - linkml:types
 
 classes:
-  Geography:
+  Place:
     description: Reference table for U.S. geographic identifiers.
     annotations:
-      __tablename__: geography
+      __tablename__: place
     slots:
       - state_name
       - state_fips

@@ -113,7 +113,7 @@ def upgrade() -> None:
     op.drop_table('usda_statistic_category')
     op.drop_table('unit')
     op.drop_table('aim2_record_base')
-    op.drop_table('geography')
+    op.drop_table('place')
     op.drop_table('resource')
     op.drop_table('usda_market_record')
     # ### end Alembic commands ###
@@ -164,7 +164,7 @@ def downgrade() -> None:
     sa.Column('primary_ag_product_id', sa.INTEGER(), autoincrement=False, nullable=True),
     sa.PrimaryKeyConstraint('id', name=op.f('resource_pkey'))
     )
-    op.create_table('geography',
+    op.create_table('place',
     sa.Column('geoid', sa.TEXT(), autoincrement=False, nullable=False),
     sa.Column('state_name', sa.TEXT(), autoincrement=False, nullable=True),
     sa.Column('state_fips', sa.TEXT(), autoincrement=False, nullable=True),
@@ -172,7 +172,7 @@ def downgrade() -> None:
     sa.Column('county_fips', sa.TEXT(), autoincrement=False, nullable=True),
     sa.Column('region_name', sa.TEXT(), autoincrement=False, nullable=True),
     sa.Column('agg_level_desc', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.PrimaryKeyConstraint('geoid', name=op.f('geography_pkey'))
+    sa.PrimaryKeyConstraint('geoid', name=op.f('place_pkey'))
     )
     op.create_table('aim2_record_base',
     sa.Column('dataset_id', sa.INTEGER(), autoincrement=False, nullable=True),

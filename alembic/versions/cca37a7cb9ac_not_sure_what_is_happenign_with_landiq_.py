@@ -1,7 +1,7 @@
 """not sure what is happenign with landiq record_id
 
 Revision ID: cca37a7cb9ac
-Revises: e942db234411
+Revises: 51167f08e5d5
 Create Date: 2026-01-20 16:37:15.205862
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'cca37a7cb9ac'
-down_revision: Union[str, Sequence[str], None] = 'e942db234411'
+down_revision: Union[str, Sequence[str], None] = '51167f08e5d5'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
