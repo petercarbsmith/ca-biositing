@@ -81,7 +81,7 @@ def usda_nass_to_df(
         state (str): State code (e.g., "CA"). Default: "CA"
         year (Optional[int]): Filter by specific year. Default: None (all years)
         commodity (Optional[str]): Commodity name (e.g., "CORN", "ALMONDS")
-        commodity_ids (Optional[List[int]]): Commodity IDs from database
+        commodity_ids (Optional[List[str]]): USDA commodity names from database (e.g., ["CORN", "WHEAT"])
         county_code (Optional[str]): County FIPS code (e.g., "06077" for San Joaquin)
         agg_level_desc (str): Aggregation level - "NATIONAL", "STATE", "COUNTY", "DISTRICT"
                              Default: "COUNTY"
@@ -153,12 +153,12 @@ def usda_nass_to_df(
 
             print(f"Querying USDA API for {len(commodity_ids)} commodities...")
 
-            for idx, comm_id in enumerate(commodity_ids, 1):
-                print(f"  [{idx}/{len(commodity_ids)}] Fetching commodity ID {comm_id}...")
+            for idx, commodity_name in enumerate(commodity_ids, 1):
+                print(f"  [{idx}/{len(commodity_ids)}] Fetching commodity: {commodity_name}...")
 
                 # Create params for this commodity
                 params = base_params.copy()
-                params["commodity_code"] = comm_id
+                params["commodity_desc"] = commodity_name
 
                 try:
                     response = session.get(BASE_URL, params=params, timeout=TIMEOUT)
@@ -186,27 +186,27 @@ def usda_nass_to_df(
                         records_count = len(df)
                         total_records_imported += records_count
                         query_log.append({
-                            'commodity_id': comm_id,
+                            'commodity_name': commodity_name,
                             'records': records_count,
                             'year': year,
                             'status': 'success'
                         })
-                        print(f"    ✓ Retrieved {records_count} records for commodity {comm_id}")
+                        print(f"    [OK] Retrieved {records_count} records for commodity {commodity_name}")
                     else:
                         query_log.append({
-                            'commodity_id': comm_id,
+                            'commodity_name': commodity_name,
                             'records': 0,
                             'year': year,
                             'status': 'no_data'
                         })
-                        print(f"    No data returned for commodity {comm_id}")
+                        print(f"    No data returned for commodity {commodity_name}")
 
                     # Rate limiting (NASS API courtesy)
                     # Being respectful to avoid key suspension
                     time.sleep(REQUEST_DELAY)
 
                 except requests.exceptions.RequestException as e:
-                    print(f"    Request failed for commodity {comm_id}: {e}")
+                    print(f"    Request failed for commodity {commodity_name}: {e}")
                     continue
 
         # Handle commodity name query (fallback)

@@ -14,8 +14,94 @@ The linking strategy is reproducible and database-driven:
 
 from datetime import datetime, timezone
 from prefect import task, get_run_logger
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, insert
 import os
+
+
+@task(name="create-usda-datasets")
+def create_usda_datasets(db_url: str = None, years: list = None) -> dict:
+    """
+    Create USDA dataset entries for specified years and source types.
+
+    This task creates dataset records named:
+    - USDA_CENSUS_YYYY for census data
+    - USDA_SURVEY_YYYY for survey data
+
+    The task is idempotent - it only creates datasets that don't already exist.
+
+    Args:
+        db_url: Database URL (defaults to DATABASE_URL env var)
+        years: List of years to create datasets for. If None, queries existing
+               USDA records to determine years.
+
+    Returns:
+        dict with created dataset count and year list
+    """
+    logger = get_run_logger()
+    engine = create_engine(db_url or os.getenv('DATABASE_URL'))
+
+    # If years not specified, query existing USDA records to find years
+    if years is None:
+        years = []
+        with engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT DISTINCT year FROM (
+                    SELECT year FROM usda_census_record
+                    UNION
+                    SELECT year FROM usda_survey_record
+                ) AS t
+                ORDER BY year
+            """))
+            years = [row[0] for row in result]
+        logger.info(f"Detected years from existing USDA records: {years}")
+
+    if not years:
+        logger.warning("No years specified and no USDA records found")
+        return {"created": 0, "years": []}
+
+    # Get existing datasets
+    existing_datasets = set()
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT name FROM dataset WHERE name LIKE 'USDA_%'"))
+        existing_datasets = {row[0] for row in result}
+
+    # Create datasets for each (year, source_type) combination
+    datasets_to_create = []
+    now = datetime.now(timezone.utc)
+
+    for year in sorted(years):
+        for source_type in ['CENSUS', 'SURVEY']:
+            dataset_name = f"USDA_{source_type}_{year}"
+
+            if dataset_name not in existing_datasets:
+                datasets_to_create.append({
+                    'name': dataset_name,
+                    'description': f"USDA {source_type} data for {year}",
+                    'source': 'USDA NASS QuickStats API',
+                    'created_at': now,
+                    'updated_at': now
+                })
+                logger.info(f"Will create dataset: {dataset_name}")
+            else:
+                logger.info(f"Dataset already exists: {dataset_name}")
+
+    # Insert new datasets
+    created_count = 0
+    if datasets_to_create:
+        try:
+            from ca_biositing.datamodels.schemas.generated.ca_biositing import Dataset
+            dataset_table = Dataset.__table__
+
+            with engine.begin() as conn:
+                result = conn.execute(insert(dataset_table), datasets_to_create)
+                created_count = result.rowcount
+
+            logger.info(f"Created {created_count} new USDA datasets")
+        except Exception as e:
+            logger.error(f"Failed to create datasets: {e}")
+            raise
+
+    return {"created": created_count, "years": sorted(years)}
 
 
 @task(name="link-census-records-to-datasets")

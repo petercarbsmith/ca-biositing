@@ -4,11 +4,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 # Determine the project root (directory containing "pixi.toml") to locate the shared .env file.
-# Determine the project root (directory containing "pixi.toml") to locate the shared .env file.
 _project_root = Path(__file__).resolve().parent
-while not (_project_root / "pixi.toml").exists():
+_env_path: Optional[Path] = None
+while True:
+    if (_project_root / "pixi.toml").exists():
+        _env_path = _project_root / "resources" / "docker" / ".env"
+        break
+    # Stop at filesystem root to avoid infinite loop in containers
+    if _project_root == _project_root.parent:
+        _env_path = None
+        break
     _project_root = _project_root.parent
-_env_path = _project_root / "resources" / "docker" / ".env"
 
 
 class Settings(BaseSettings):
@@ -26,7 +32,7 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = None
 
     model_config = SettingsConfigDict(
-        env_file=str(_env_path),
+        env_file=str(_env_path) if _env_path else None,
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=True,

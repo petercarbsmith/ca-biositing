@@ -44,17 +44,28 @@ YEAR = None
 # Leave as None to get all commodities
 COMMODITY = None
 
+# North San Joaquin Valley priority counties (3-digit NASS county codes)
+# These match the counties used in the notebook
+PRIORITY_COUNTIES = {
+    "077",  # San Joaquin
+    "099",  # Stanislaus
+    "047",  # Merced
+}
+
 
 @task
 def extract() -> Optional[pd.DataFrame]:
     """
-    Extracts USDA data ONLY for commodities mapped in resource_usda_commodity_map.
+    Extracts USDA data ONLY for commodities mapped in resource_usda_commodity_map
+    and for priority counties (North San Joaquin Valley).
     This allows adding new crops by updating the database, no code changes needed.
     """
     logger = get_run_logger()
+    logger.info("🔵 [USDA Extract] Starting...")
 
-    # Get commodity IDs from database
+    # Get commodity names from database
     commodity_ids = get_mapped_commodity_ids()
+    logger.info(f"🔵 [USDA Extract] Got {len(commodity_ids) if commodity_ids else 0} commodities: {commodity_ids}")
 
     if not commodity_ids:
         logger.warning(
@@ -64,19 +75,34 @@ def extract() -> Optional[pd.DataFrame]:
         )
         return None
 
-    logger.info(f"Extracting USDA data for {len(commodity_ids)} commodities...")
+    logger.info(f"Extracting USDA data for {len(commodity_ids)} commodities in {len(PRIORITY_COUNTIES)} priority counties...")
 
-    # Call utility with commodity IDs (not names)
-    raw_df = usda_nass_to_df(
-        api_key=USDA_API_KEY,
-        state=STATE,
-        year=YEAR,
-        commodity_ids=commodity_ids  # ← Database-driven!
-    )
+    # Collect data for all priority counties
+    all_dfs = []
 
-    if raw_df is None:
-        logger.error("Failed to extract data from USDA API. Aborting.")
+    for county_code in sorted(PRIORITY_COUNTIES):
+        logger.info(f"  Querying county {county_code}...")
+
+        # Call utility with commodity names and county filter
+        county_df = usda_nass_to_df(
+            api_key=USDA_API_KEY,
+            state=STATE,
+            year=YEAR,
+            commodity_ids=commodity_ids,  # Database-driven commodity names
+            county_code=county_code  # Limit to this county
+        )
+
+        if county_df is not None and not county_df.empty:
+            all_dfs.append(county_df)
+            logger.info(f"    Got {len(county_df)} records from county {county_code}")
+        else:
+            logger.warning(f"    No data for county {county_code}")
+
+    if not all_dfs:
+        logger.error("No data retrieved from any county. Aborting.")
         return None
 
-    logger.info(f"Successfully extracted {len(raw_df)} records from USDA NASS API.")
+    # Combine all counties
+    raw_df = pd.concat(all_dfs, ignore_index=True)
+    logger.info(f"Successfully extracted {len(raw_df)} total records from USDA NASS API across {len(all_dfs)} counties.")
     return raw_df

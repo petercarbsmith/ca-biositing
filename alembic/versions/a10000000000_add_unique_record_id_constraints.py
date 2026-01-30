@@ -23,11 +23,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Add UNIQUE constraints on record_id for all *_record tables."""
-    # observation table
+    # observation table - use composite key since multiple observations per record_id
+    # (one for each parameter_id + unit_id combination)
     op.create_unique_constraint(
-        'uq_observation_record_id',
+        'uq_observation_record_parameter_unit',
         'observation',
-        ['record_id']
+        ['record_id', 'record_type', 'parameter_id', 'unit_id']
     )
 
     # aim1_record_base table
@@ -153,4 +154,4 @@ def downgrade() -> None:
     op.drop_constraint('uq_autoclave_record_record_id', 'autoclave_record', type_='unique')
     op.drop_constraint('uq_aim2_record_base_record_id', 'aim2_record_base', type_='unique')
     op.drop_constraint('uq_aim1_record_base_record_id', 'aim1_record_base', type_='unique')
-    op.drop_constraint('uq_observation_record_id', 'observation', type_='unique')
+    op.drop_constraint('uq_observation_record_parameter_unit', 'observation', type_='unique')

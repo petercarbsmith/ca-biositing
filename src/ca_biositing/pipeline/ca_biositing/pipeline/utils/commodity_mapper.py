@@ -5,15 +5,15 @@ from sqlalchemy import text, create_engine
 from sqlmodel import Session, select
 
 
-def get_mapped_commodity_ids(engine=None) -> Optional[List[int]]:
+def get_mapped_commodity_ids(engine=None) -> Optional[List[str]]:
     """
-    Get USDA commodity IDs mapped to our resources from database.
+    Get USDA commodity NAMES from database for API queries.
 
-    Note: The database schema has 'primary_crop_id' but the generated
-    models have 'primary_ag_product_id'. This function handles both.
+    The USDA QuickStats API expects commodity names (e.g., "CORN", "WHEAT")
+    not codes. This function returns names from the usda_commodity table.
 
     Returns:
-        List of usda_commodity IDs that are mapped, or None if query fails
+        List of USDA commodity names (e.g., ["CORN", "WHEAT", ...])
     """
     try:
         if engine is None:
@@ -38,15 +38,15 @@ def get_mapped_commodity_ids(engine=None) -> Optional[List[int]]:
                 print("   before running USDA ingestion")
                 return []
 
-            # Join with UsdaCommodity to get the actual USDA codes, not the database IDs
+            # Return usda_code (e.g., "11199199") not id (database primary key)
             result = conn.execute(sql_text("""
-                SELECT DISTINCT uc.id
+                SELECT DISTINCT uc.name
                 FROM usda_commodity uc
-                WHERE uc.id IS NOT NULL
-                ORDER BY uc.id
+                WHERE uc.name IS NOT NULL
+                ORDER BY uc.name
             """))
-            codes = [row[0] for row in result.fetchall()]
-            return codes if codes else []
+            names = [row[0] for row in result.fetchall()]
+            return names if names else []
     except Exception as e:
         print(f"Error querying mapped commodities: {e}")
         import traceback

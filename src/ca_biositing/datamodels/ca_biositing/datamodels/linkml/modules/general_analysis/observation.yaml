@@ -39,7 +39,6 @@ slots:
   record_id:
     range: string
     description: ID of the record.
-    identifier: true
 
   parameter_id:
     range: Parameter
