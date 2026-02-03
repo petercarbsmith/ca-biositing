@@ -81,8 +81,7 @@ def load_prepared_sample(df: pd.DataFrame):
                                 setattr(existing_record, key, value)
                     else:
                         # Create new record
-                        if clean_record.get('created_at') is None:
-                            clean_record['created_at'] = now
+                        clean_record['created_at'] = now
                         new_ps = PreparedSample(**clean_record)
                         session.add(new_ps)
 

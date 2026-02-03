@@ -1,4 +1,5 @@
 from typing import Type, TypeVar, Any
+from datetime import datetime, timezone
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -91,8 +92,17 @@ def replace_name_with_id_df(
 
   # 3. Insert missing reference rows
   if new_names:
+    now = datetime.now(timezone.utc)
+    table_columns = {c.name for c in ref_model.__table__.columns}
+
     for name in new_names:
-      new_record = ref_model(**{model_name_attr: name})
+      record_data = {model_name_attr: name}
+      if 'created_at' in table_columns:
+          record_data['created_at'] = now
+      if 'updated_at' in table_columns:
+          record_data['updated_at'] = now
+
+      new_record = ref_model(**record_data)
       db.add(new_record)
 
     # Flush to get IDs without ending the transaction
