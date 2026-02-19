@@ -16,9 +16,11 @@ OFFICIAL_API_MAPPINGS: Dict[str, str] = {
     'ALL GRAPES': 'GRAPES',
     'ALMONDS': 'ALMONDS',
     'CORN  ALL': 'CORN',
-    'CORN  FOR SILAGE': 'SILAGE',
+    'CORN  FOR SILAGE': 'CORN',  # Silage data is contained within CORN commodity responses
+    'CITRUS': 'ORANGES',
     'COTTON  UPLAND': 'COTTON',
     'CUCUMBERS': 'CUCUMBERS',
+    'DATES': 'DATES',
     'HAY  ALFALFA (DRY)': 'HAY',
     'OLIVES': 'OLIVES',
     'PEACHES': 'PEACHES',

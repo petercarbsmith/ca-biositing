@@ -15,6 +15,10 @@ from typing import Optional
 import os
 import pandas as pd
 from prefect import task, get_run_logger
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Use absolute imports that work both locally and in Docker
 try:
@@ -31,7 +35,7 @@ except ImportError:
 # To set this, add to resources/docker/.env:
 #   USDA_NASS_API_KEY=your_api_key_here
 # Get your free API key at: https://quickstats.nass.usda.gov/api
-USDA_API_KEY = os.getenv("USDA_NASS_API_KEY", "")
+USDA_API_KEY = os.getenv("USDA_NASS_API_KEY")
 
 # State code to query (using USDA state abbreviation)
 # CA = California
@@ -86,7 +90,7 @@ def extract() -> Optional[pd.DataFrame]:
 
         # Call utility with commodity names and county filter
         county_df = usda_nass_to_df(
-            api_key=USDA_API_KEY,
+            api_key=os.getenv("USDA_NASS_API_KEY"),
             state=STATE,
             year=YEAR,
             commodity_ids=commodity_ids,  # Database-driven commodity names

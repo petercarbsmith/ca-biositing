@@ -87,14 +87,18 @@ def populate_api_names(engine=None, dry_run=False):
             if not dry_run and updates:
                 print(f"\nExecuting {len(updates)} updates...")
 
-                with conn.begin():  # Transaction
-                    for update in updates:
-                        conn.execute(text("""
-                            UPDATE usda_commodity
-                            SET api_name = :api_name,
-                                updated_at = :updated_at
-                            WHERE id = :id
-                        """), update)
+                # In SQLAlchemy 2.0+, connections handle transactions automatically.
+                # We perform the updates and then commit the connection.
+                for update in updates:
+                    conn.execute(text("""
+                        UPDATE usda_commodity
+                        SET api_name = :api_name,
+                            updated_at = :updated_at
+                        WHERE id = :id
+                    """), update)
+
+                if hasattr(conn, "commit"):
+                    conn.commit()
 
                 stats['updated_commodities'] = len(updates)
                 print(f"✅ Updated {len(updates)} commodity records")

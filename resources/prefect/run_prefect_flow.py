@@ -12,7 +12,7 @@ AVAILABLE_FLOWS = {
     "resource_information": "ca_biositing.pipeline.flows.resource_information.resource_information_flow",
     "usda_etl": "ca_biositing.pipeline.flows.usda_etl.usda_etl_flow",
     "static_resource_info": "ca_biositing.pipeline.flows.static_resource_info.static_resource_info_flow",
-    "landiq": "ca_biositing.pipeline.flows.landiq_etl.landiq_etl_flow"
+    #"landiq": "ca_biositing.pipeline.flows.landiq_etl.landiq_etl_flow"
     #"field_sample": "ca_biositing.pipeline.flows.field_sample_etl.field_sample_etl_flow",
     #"prepared_sample": "ca_biositing.pipeline.flows.prepared_sample_etl.prepared_sample_etl_flow",
 }
