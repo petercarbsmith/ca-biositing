@@ -24,7 +24,6 @@ frontend = { features = [
 ], no-default-feature = true, solve-group = "default" }
 docs = { features = ["docs"], no-default-feature = true, solve-group = "default" }
 deployment = { features = ["cloud"], solve-group = "default" }
-
 [dependencies]
 python = "~=3.12"
 pre-commit = ">=4.2.0,<5"
