@@ -1,3 +1,6 @@
 [submodule "frontend"]
 	path = frontend
 	url = https://github.com/sustainability-software-lab/cal-bioscape-frontend.git
+[submodule "analysis/biocirv-ai"]
+	path = analysis/biocirv-ai
+	url = https://github.com/sustainability-software-lab/biocirv-ai.git

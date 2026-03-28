@@ -37,7 +37,7 @@ repos:
         name: Disallow improper capitalization
         language: pygrep
         entry: Github
-        exclude: .pre-commit-config.yaml
+        exclude: (.pre-commit-config.yaml|biocirv-ai/.*)
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: "0.37.0"
