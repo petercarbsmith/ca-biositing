@@ -1,98 +1,118 @@
-# Plan: biocirv-ai Standalone Migration
+# Plan & Accomplishments: BioCirv AI Standalone Migration
 
-## Objective
-Migrate the `analysis/ai_exploration` sandbox from the `ca-biositing` monorepo into a standalone repository named `biocirv-ai` within the `sustainability-software-lab` organization. The new repository will be structured as a PEP 420 namespace package (`ca_biositing.ai_exploration`) and linked back to the main project as a git submodule.
+## 🎯 Objective
 
-## 🏗️ Repository Structure (Standalone biocirv-ai)
-The desired final state of the `biocirv-ai` repository:
+The goal was to transition the AI Exploration Sandbox from an isolated directory
+in the `ca-biositing` monorepo into a high-quality, standalone repository
+([`biocirv-ai`](https://github.com/sustainability-software-lab/biocirv-ai)) that
+serves as a shared "product" for natural language geospatial analysis.
 
-```text
-biocirv-ai/
-├── src/
-│   └── ca_biositing/              # No __init__.py (Namespace)
-│       └── ai_exploration/        # Package implementation
-│           ├── __init__.py        # Package initialization
-│           ├── sandbox_setup.py   # Core logic (hardened LLM & Parser)
-│           ├── schema.py          # NEW: Automatic schema discovery
-│           └── tools/             # NEW: Geospatial & custom tools
-│               ├── __init__.py
-│               └── mapping.py     # Folium/Geopandas integration
-├── notebooks/                     # Analysis playground
-│   ├── ai_analysis.ipynb
-│   └── sandbox_exploration.ipynb
-├── tests/                         # Pytest suite
-│   ├── __init__.py
-│   └── test_parser.py
-├── .env.example                   # Template for credentials
-├── .gitignore                     # Standard Python/Pixi gitignore
-├── LICENSE                        # Project license
-├── pixi.toml                      # Pixi environment & task management
-├── pyproject.toml                 # Package metadata (Hatch-based)
-└── README.md                      # Setup & usage instructions
-```
+## ✅ Accomplishments
 
-## 🛠️ Required Steps
+### 1. Standalone Repository Architecture
 
-### 1. Repository Initialization (Standalone)
-- Create the `biocirv-ai` directory structure.
-- Initialize `pyproject.toml` with `hatchling` build backend (Organization: `sustainability-software-lab`).
-- Initialize `pixi.toml` with the following environments:
-  - `default`: Core analysis tools.
-  - `gis`: `geopandas`, `folium`, `shapely`.
-  - `dev`: `pytest`, `pre-commit`.
+- **Namespace Package**: Implemented the PEP 420 pattern
+  (`ca_biositing.ai_exploration`). This preserves the project brand while
+  allowing the package to be installed independently via
+  `pip install git+https://...`.
+- **Build System**: Configured `pyproject.toml` with the `hatchling` backend,
+  following modern Python packaging standards.
+- **Environment Management**: Created a robust `pixi.toml` with specific
+  environments for GIS (`geopandas`, `folium`) and development (`pytest`,
+  `pre-commit`).
 
-### 2. Core Logic Refactoring
-- Move `sandbox_setup.py` to `src/ca_biositing/ai_exploration/`.
-- Refactor imports to use the new namespace structure.
-- Update `SandboxResponseParser` to be more modular.
+### 2. Hardened Core Logic
 
-### 3. Dynamic Schema Discovery
-- Create `schema.py`.
-- Implement `discover_views(engine, schema_names)` to query `information_schema.views`.
-- Integrate discovery into the `Agent` initialization flow.
+- **`sandbox_setup.py`**: Refactored the `CBORGLLM` and `SandboxResponseParser`
+  into the namespace package.
+- **`schema.py` (New)**: Replaced the manual metadata lists with a **dynamic
+  discovery system**. The AI agent now automatically queries PostgreSQL's
+  `information_schema` to find and describe all views in the `ca_biositing` and
+  `analytics` schemas.
+- **Geospatial Readiness**: Added hooks for automated mapping detection
+  (Plotly/Folium) within the response parser.
 
-### 4. Geospatial Integration
-- Implement Folium/Geopandas detection in `SandboxResponseParser`.
-- Add mapping utilities to `tools/mapping.py`.
+### 3. CI/CD & Quality Standards
 
-### 5. Notebook Migration
-- Update `ai_analysis.ipynb` and `sandbox_exploration.ipynb`.
-- Change setup logic to import from `ca_biositing.ai_exploration`.
+- **GitHub Actions**: Created a full CI pipeline (`.github/workflows/ci.yml`)
+  that runs tests and coverage on Ubuntu and macOS.
+- **Pre-commit**: Mirrored the parent project's strict linting and formatting
+  standards (`prettier`, `codespell`, `trailing-whitespace`) to ensure code
+  quality matches the core repository.
 
-### 6. Main Repository Integration
-- Add `biocirv-ai` as a git submodule at `analysis/biocirv-ai`.
-- Remove the legacy `analysis/ai_exploration` directory.
-- Update the main `ca-biositing/pixi.toml` to install the new package in editable mode from the submodule path.
+### 4. Git Integration (Submodule)
 
-### 7. Documentation & Verification
-- Create a comprehensive `README.md` covering local setup, submodule management, and Google Colab usage.
-- Verify `pixi install` and kernel registration works as expected in both the standalone and main repo contexts.
+- **Submodule Linkage**: Added the new repo as a Git submodule at
+  `analysis/biocirv-ai`.
+- **Legacy Cleanup**: Safely removed the old `analysis/ai_exploration`
+  directory.
+- **Personal Fork Workflow**: All integration changes were pushed to the
+  `feat-pandasai-integration` branch on the user's personal fork for clean PR
+  management.
 
-## 🔗 Final State Architecture
+## 🏛️ Discussion: State of the Architecture
 
-```mermaid
-graph TD
-    Repo[biocirv-ai Repository] --> SRC[src/ca_biositing/]
-    SRC --> AI[ai_exploration/]
-    AI --> Core[sandbox_setup.py]
-    AI --> Schema[schema.py - Dynamic Discovery]
-    AI --> Tools[tools/mapping.py - Geospatial]
-    
-    Repo --> NB[notebooks/]
-    NB --> EXP[sandbox_exploration.ipynb]
-    NB --> ANA[ai_analysis.ipynb]
-    
-    Repo --> CFG[Configuration]
-    CFG --> PIXI[pixi.toml]
-    CFG --> PYPROJ[pyproject.toml]
-    
-    subgraph "External Integrations"
-        CBORG[CBORG LLM Gateway]
-        DB[PostgreSQL / Cloud SQL]
-        Colab[Google Colab]
-    end
-    
-    Core --> CBORG
-    Schema --> DB
-    Repo -.-> Colab
-```
+### The "Submodule vs. Package" Strategy
+
+By structuring `biocirv-ai` as both a **submodule** and a **namespace package**,
+we have achieved a highly flexible architecture:
+
+- **For Main Project Developers**: They see the code at `analysis/biocirv-ai`.
+  It is "followed" by Git but remains "inactive" in their main Pixi environment
+  until they choose to install it. This prevents dependency bloat in the main
+  ETL pipeline.
+- **For External Researchers**: They can use the AI tools in **Google Colab** or
+  other environments by simply installing the standalone package. They don't
+  need to clone the 100+ models of the main repository.
+
+### Dynamic Discovery & Resilience
+
+The move to dynamic schema discovery in `schema.py` is a major architectural
+improvement. The AI tool is no longer "brittle"—as new materialized views are
+added to the database via Alembic migrations in the main project, the AI sandbox
+automatically detects them on the next startup without a single line of code
+change in the `biocirv-ai` repo.
+
+## 🚀 Next Phase: Technical Refinement
+
+### 1. Geospatial Tool Integration
+
+A major goal for the standalone product is the ability to generate maps directly
+from natural language.
+
+- **Tools**: Integrate **Geopandas** and **Folium** more deeply into the AI
+  agent's environment.
+- **Capabilities**: Enable the agent to recognize `geoid` or coordinate columns
+  and automatically produce choropleth maps (e.g., California county-level
+  production) or point-based visualizations of facilities.
+- **Workflow**: Ensure the `SandboxResponseParser` can detect Folium map objects
+  and render them interactively in the notebook.
+
+### 2. Cloud Connectivity (Google Colab)
+
+- **Action**: Implement a secure connection from Colab to GCP-hosted databases
+  (Staging/Production) via the **Cloud SQL Auth Proxy** integrated into the
+  notebook setup.
+
+### 3. Flagged Issues & Improvements
+
+- **🚩 SmartDataFrame Parsing**: We are investigating reports of inconsistent
+  parsing when using `SmartDataFrame`. The goal is to ensure the internal
+  dispatching always returns native objects rather than wrapped responses.
+- **🚩 Table Rendering Consistency**: Some queries still return
+  `DataFrameResponse` wrappers. We are working on the `SandboxResponseParser` to
+  ensure **100%** native table rendering in the VS Code Data Viewer.
+- **🚩 LLM Latency**: Performance varies based on CBORG gateway load; 60s
+  timeouts are in place, but we may need to implement more aggressive retry
+  logic.
+
+## 🔗 Repository Reference
+
+- **GitHub Repo**:
+  [sustainability-software-lab/biocirv-ai](https://github.com/sustainability-software-lab/biocirv-ai)
+- **Local Path**: `analysis/biocirv-ai` (Submodule)
+- **Namespace**: `ca_biositing.ai_exploration`
+
+---
+
+_Last Updated: 2026-03-28_
