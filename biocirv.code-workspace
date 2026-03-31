@@ -1,0 +1,21 @@
+{
+  "folders": [
+    {
+      "name": "CA Biositing (Main)",
+      "path": "."
+    },
+    {
+      "name": "BioCirv AI (Standalone)",
+      "path": "analysis/biocirv-ai"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "analysis/biocirv-ai": true,
+      "biocirv-ai": true
+    },
+    "python.analysis.extraPaths": [
+      "./analysis/biocirv-ai/src"
+    ]
+  }
+}
